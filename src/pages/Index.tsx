@@ -1,6 +1,6 @@
-
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { useQuery } from "@apollo/client";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -16,72 +16,49 @@ import RecentIncidents from "@/components/dashboard/RecentIncidents";
 import GraphView from "@/components/ui/GraphView";
 import MapView from "@/components/ui/MapView";
 import { AlertTriangle, FileText, Map, Network, PieChart, Plus } from "lucide-react";
+import { GET_DASHBOARD_STATS, GET_PERSON_CONNECTIONS } from "@/lib/graphql-queries";
 
 const Index = () => {
-  const [stats, setStats] = useState<DashboardStat[]>([]);
   const [graphData, setGraphData] = useState<GraphData>({ nodes: [], edges: [] });
   const [mapLocations, setMapLocations] = useState<any[]>([]);
 
+  const { data: statsData, loading: statsLoading } = useQuery(GET_DASHBOARD_STATS);
+  
+  const { data: graphDataResult } = useQuery(GET_PERSON_CONNECTIONS, {
+    variables: { personId: "1" },
+    skip: !true,
+  });
+
   useEffect(() => {
-    // Mock data for demonstration purposes
-    setStats([
-      {
-        title: "Total Incidents",
-        value: 127,
-        change: 12,
-        direction: "up",
-        period: "last month",
-      },
-      {
-        title: "Open Cases",
-        value: 34,
-        change: 8,
-        direction: "down",
-        period: "last month",
-      },
-      {
-        title: "Persons of Interest",
-        value: 57,
-        change: 5,
-        direction: "up",
-        period: "last month",
-      },
-      {
-        title: "Evidence Items",
-        value: 205,
-        change: 18,
-        direction: "up",
-        period: "last month",
-      },
-    ]);
+    if (graphDataResult?.personConnections) {
+      setGraphData(graphDataResult.personConnections);
+    } else {
+      setGraphData({
+        nodes: [
+          { id: "1", label: "John Doe", type: "person", data: { id: "1" } },
+          { id: "2", label: "Jane Smith", type: "person", data: { id: "2" } },
+          { id: "3", label: "Shoplifting at Mall", type: "incident", data: { id: "i1" } },
+          { id: "4", label: "ABC-123", type: "vehicle", data: { id: "v1" } },
+          { id: "5", label: "XYZ-789", type: "vehicle", data: { id: "v2" } },
+          { id: "6", label: "Downtown Theft Case", type: "case", data: { id: "c1" } },
+        ],
+        edges: [
+          { id: "e1", source: "1", target: "3", label: "involved in" },
+          { id: "e2", source: "2", target: "3", label: "involved in" },
+          { id: "e3", source: "1", target: "4", label: "associated with" },
+          { id: "e4", source: "2", target: "5", label: "associated with" },
+          { id: "e5", source: "3", target: "6", label: "part of" },
+        ],
+      });
+    }
 
-    // Mock graph data
-    setGraphData({
-      nodes: [
-        { id: "1", label: "John Doe", type: "person", data: { id: "1" } },
-        { id: "2", label: "Jane Smith", type: "person", data: { id: "2" } },
-        { id: "3", label: "Shoplifting at Mall", type: "incident", data: { id: "i1" } },
-        { id: "4", label: "ABC-123", type: "vehicle", data: { id: "v1" } },
-        { id: "5", label: "XYZ-789", type: "vehicle", data: { id: "v2" } },
-        { id: "6", label: "Downtown Theft Case", type: "case", data: { id: "c1" } },
-      ],
-      edges: [
-        { id: "e1", source: "1", target: "3", label: "involved in" },
-        { id: "e2", source: "2", target: "3", label: "involved in" },
-        { id: "e3", source: "1", target: "4", label: "associated with" },
-        { id: "e4", source: "2", target: "5", label: "associated with" },
-        { id: "e5", source: "3", target: "6", label: "part of" },
-      ],
-    });
-
-    // Mock map data
     setMapLocations([
       { latitude: 34.0522, longitude: -118.2437, title: "Shoplifting", type: "theft" },
       { latitude: 34.0622, longitude: -118.2537, title: "Vehicle Break-in", type: "burglary" },
       { latitude: 34.0422, longitude: -118.2337, title: "Suspicious Activity", type: "suspicious-activity" },
       { latitude: 34.0522, longitude: -118.2637, title: "Vandalism", type: "vandalism" },
     ]);
-  }, []);
+  }, [graphDataResult]);
 
   return (
     <div className="container py-6">
@@ -103,7 +80,7 @@ const Index = () => {
           </div>
         </div>
 
-        <DashboardSummary stats={stats} />
+        <DashboardSummary stats={statsData?.dashboardStats || []} loading={statsLoading} />
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           <div className="col-span-2">

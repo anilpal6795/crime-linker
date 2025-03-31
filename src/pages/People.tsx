@@ -1,5 +1,6 @@
 
 import { useState } from "react";
+import { useQuery, useMutation } from "@apollo/client";
 import {
   Card,
   CardContent,
@@ -22,117 +23,68 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Eye, FileText, Network, Plus, Search, User, Users } from "lucide-react";
 import { Person } from "@/types";
 import GraphView from "@/components/ui/GraphView";
+import { GET_PEOPLE, SEARCH_PEOPLE, GET_PERSON_CONNECTIONS, UPDATE_PERSON } from "@/lib/graphql-queries";
+import { useToast } from "@/components/ui/use-toast";
 
 const People = () => {
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
   const [personFilter, setPersonFilter] = useState("all");
 
-  // Mock data
-  const people: Person[] = [
-    {
-      id: "1",
-      firstName: "John",
-      lastName: "Doe",
-      alias: "Johnny",
-      gender: "male",
-      age: 32,
-      ethnicity: "Caucasian",
-      height: "5'10\"",
-      build: "Medium",
-      distinguishingFeatures: "Tattoo on right arm",
-      isPersonOfInterest: true,
-      createdAt: new Date(2023, 5, 10),
-    },
-    {
-      id: "2",
-      firstName: "Jane",
-      lastName: "Smith",
-      gender: "female",
-      age: 28,
-      ethnicity: "African American",
-      height: "5'6\"",
-      build: "Slim",
-      isPersonOfInterest: true,
-      createdAt: new Date(2023, 5, 12),
-    },
-    {
-      id: "3",
-      firstName: "Michael",
-      lastName: "Johnson",
-      gender: "male",
-      age: 42,
-      ethnicity: "Hispanic",
-      height: "6'0\"",
-      build: "Athletic",
-      distinguishingFeatures: "Scar on cheek",
-      isPersonOfInterest: false,
-      createdAt: new Date(2023, 5, 15),
-    },
-    {
-      id: "4",
-      firstName: "Sarah",
-      lastName: "Williams",
-      gender: "female",
-      age: 35,
-      ethnicity: "Asian",
-      height: "5'4\"",
-      build: "Slim",
-      isPersonOfInterest: false,
-      createdAt: new Date(2023, 5, 18),
-    },
-    {
-      id: "5",
-      firstName: "Robert",
-      lastName: "Davis",
-      alias: "Bobby",
-      gender: "male",
-      age: 45,
-      ethnicity: "Caucasian",
-      height: "5'11\"",
-      build: "Heavy",
-      distinguishingFeatures: "Full sleeve tattoos on both arms",
-      isPersonOfInterest: true,
-      createdAt: new Date(2023, 5, 20),
-    },
-  ];
-
-  // Mock connection data for a person
-  const personConnections = {
-    "1": {
-      nodes: [
-        { id: "p1", label: "John Doe", type: "person", data: { id: "1" } },
-        { id: "i1", label: "Theft at Main St Store", type: "incident", data: { id: "i1" } },
-        { id: "i2", label: "Theft at Oak Ave Shop", type: "incident", data: { id: "i2" } },
-        { id: "v1", label: "ABC-123", type: "vehicle", data: { id: "v1" } },
-        { id: "p2", label: "Jane Smith", type: "person", data: { id: "2" } },
-      ],
-      edges: [
-        { id: "e1", source: "p1", target: "i1", label: "involved in" },
-        { id: "e2", source: "p1", target: "i2", label: "involved in" },
-        { id: "e3", source: "p1", target: "v1", label: "associated with" },
-        { id: "e4", source: "p1", target: "p2", label: "associated with" },
-        { id: "e5", source: "p2", target: "i2", label: "involved in" },
-      ],
+  // Query for all people
+  const { data: peopleData, loading: peopleLoading, refetch } = useQuery(GET_PEOPLE, {
+    variables: { 
+      isPersonOfInterest: personFilter === "poi" ? true : 
+                         personFilter === "non-poi" ? false : undefined 
     }
-  };
-
-  const filteredPeople = people.filter((person) => {
-    // Apply text search
-    const fullName = `${person.firstName} ${person.lastName}`.toLowerCase();
-    const matchesSearch = fullName.includes(searchTerm.toLowerCase()) || 
-                          (person.alias?.toLowerCase().includes(searchTerm.toLowerCase()) || false);
-    
-    // Apply person of interest filter
-    const matchesFilter = personFilter === "all" || 
-                         (personFilter === "poi" && person.isPersonOfInterest) || 
-                         (personFilter === "non-poi" && !person.isPersonOfInterest);
-    
-    return matchesSearch && matchesFilter;
   });
+
+  // Query for searching people
+  const { data: searchData, loading: searchLoading } = useQuery(SEARCH_PEOPLE, {
+    variables: { searchTerm },
+    skip: !searchTerm, // Skip this query if searchTerm is empty
+  });
+
+  // Query for person connections
+  const { data: graphData } = useQuery(GET_PERSON_CONNECTIONS, {
+    variables: { personId: selectedPerson?.id || "" },
+    skip: !selectedPerson,
+  });
+
+  // Mutation for updating a person
+  const [updatePerson] = useMutation(UPDATE_PERSON, {
+    onCompleted: () => {
+      toast({
+        title: "Person updated",
+        description: "The person's details have been updated successfully.",
+      });
+      refetch();
+    },
+    onError: (error) => {
+      toast({
+        title: "Error updating person",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Determine which people data to show based on search or filter
+  const people = searchTerm ? searchData?.searchPeople || [] : peopleData?.people || [];
+  const isLoading = peopleLoading || searchLoading;
 
   const handlePersonSelect = (person: Person) => {
     setSelectedPerson(person);
+  };
+
+  const togglePersonOfInterestStatus = (person: Person) => {
+    updatePerson({
+      variables: {
+        id: person.id,
+        isPersonOfInterest: !person.isPersonOfInterest,
+      }
+    });
   };
 
   return (
@@ -199,26 +151,34 @@ const People = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredPeople.length === 0 ? (
+                      {isLoading ? (
+                        Array(3).fill(0).map((_, index) => (
+                          <TableRow key={`loading-${index}`}>
+                            <TableCell colSpan={5}>
+                              <div className="h-4 w-3/4 rounded bg-muted animate-pulse-slow" />
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      ) : people.length === 0 ? (
                         <TableRow>
                           <TableCell colSpan={5} className="text-center py-4 text-muted-foreground">
                             No people found matching the criteria
                           </TableCell>
                         </TableRow>
                       ) : (
-                        filteredPeople.map((person) => (
+                        people.map((person) => (
                           <TableRow key={person.id} className="cursor-pointer hover:bg-muted/50" onClick={() => handlePersonSelect(person)}>
                             <TableCell>
                               <div className="font-medium">{person.firstName} {person.lastName}</div>
                               {person.alias && <div className="text-xs text-muted-foreground">Alias: {person.alias}</div>}
                             </TableCell>
                             <TableCell>
-                              <div>{person.age} yrs</div>
-                              <div className="text-xs text-muted-foreground capitalize">{person.gender}</div>
+                              <div>{person.age || "N/A"} yrs</div>
+                              <div className="text-xs text-muted-foreground capitalize">{person.gender?.toLowerCase() || "Unknown"}</div>
                             </TableCell>
                             <TableCell>
-                              <div>{person.ethnicity}, {person.build}</div>
-                              <div className="text-xs text-muted-foreground">{person.height}</div>
+                              <div>{person.ethnicity || "Unknown"}, {person.build || "Unknown"}</div>
+                              <div className="text-xs text-muted-foreground">{person.height || "Unknown"}</div>
                             </TableCell>
                             <TableCell>
                               {person.isPersonOfInterest ? (
@@ -275,23 +235,23 @@ const People = () => {
                   <div className="grid grid-cols-2 gap-2">
                     <div>
                       <h4 className="text-sm font-medium text-muted-foreground">Age</h4>
-                      <p>{selectedPerson.age} years</p>
+                      <p>{selectedPerson.age || "Unknown"} years</p>
                     </div>
                     <div>
                       <h4 className="text-sm font-medium text-muted-foreground">Gender</h4>
-                      <p className="capitalize">{selectedPerson.gender}</p>
+                      <p className="capitalize">{selectedPerson.gender?.toLowerCase() || "Unknown"}</p>
                     </div>
                     <div>
                       <h4 className="text-sm font-medium text-muted-foreground">Ethnicity</h4>
-                      <p>{selectedPerson.ethnicity}</p>
+                      <p>{selectedPerson.ethnicity || "Unknown"}</p>
                     </div>
                     <div>
                       <h4 className="text-sm font-medium text-muted-foreground">Height</h4>
-                      <p>{selectedPerson.height}</p>
+                      <p>{selectedPerson.height || "Unknown"}</p>
                     </div>
                     <div>
                       <h4 className="text-sm font-medium text-muted-foreground">Build</h4>
-                      <p>{selectedPerson.build}</p>
+                      <p>{selectedPerson.build || "Unknown"}</p>
                     </div>
                   </div>
                   
@@ -305,20 +265,20 @@ const People = () => {
                   <div className="pt-2">
                     <h4 className="text-sm font-medium mb-2">Connected Incidents</h4>
                     <div className="space-y-2">
-                      <div className="rounded-md border p-2 text-sm">
-                        <div className="font-medium">Theft at Main St Store</div>
-                        <div className="text-muted-foreground">July 10, 2023</div>
-                      </div>
-                      <div className="rounded-md border p-2 text-sm">
-                        <div className="font-medium">Theft at Oak Ave Shop</div>
-                        <div className="text-muted-foreground">July 12, 2023</div>
+                      {/* In a full implementation, this would show data from person.incidents */}
+                      <div className="text-center text-muted-foreground py-2">
+                        No connected incidents found.
                       </div>
                     </div>
                   </div>
                   
                   <div className="pt-2 flex gap-2">
                     <Button size="sm">Update Profile</Button>
-                    <Button size="sm" variant="outline">
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => togglePersonOfInterestStatus(selectedPerson)}
+                    >
                       {selectedPerson.isPersonOfInterest ? "Remove POI Status" : "Mark as POI"}
                     </Button>
                   </div>
@@ -343,7 +303,7 @@ const People = () => {
           </div>
         </div>
 
-        {selectedPerson && personConnections[selectedPerson.id] && (
+        {selectedPerson && graphData?.personConnections && (
           <Card className="mt-6">
             <CardHeader>
               <CardTitle className="flex items-center text-lg font-medium">
@@ -353,7 +313,7 @@ const People = () => {
             </CardHeader>
             <CardContent>
               <GraphView 
-                data={personConnections[selectedPerson.id]} 
+                data={graphData.personConnections} 
                 height="400px" 
               />
             </CardContent>
