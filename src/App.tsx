@@ -4,6 +4,8 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { ApolloProvider } from '@apollo/client';
+import { client } from './lib/graphql-client';
 import Navbar from "./components/layout/Navbar";
 import Sidebar from "./components/layout/Sidebar";
 import Index from "./pages/Index";
@@ -30,57 +32,59 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => (
 );
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route 
-            path="/" 
-            element={
-              <AppLayout>
-                <Index />
-              </AppLayout>
-            } 
-          />
-          <Route 
-            path="/report-incident" 
-            element={
-              <AppLayout>
-                <ReportIncident />
-              </AppLayout>
-            } 
-          />
-          <Route 
-            path="/cases" 
-            element={
-              <AppLayout>
-                <Cases />
-              </AppLayout>
-            } 
-          />
-          <Route 
-            path="/people" 
-            element={
-              <AppLayout>
-                <People />
-              </AppLayout>
-            } 
-          />
-          <Route 
-            path="/reports" 
-            element={
-              <AppLayout>
-                <Reports />
-              </AppLayout>
-            } 
-          />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
+  <ApolloProvider client={client}>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route 
+              path="/" 
+              element={
+                <AppLayout>
+                  <Index />
+                </AppLayout>
+              } 
+            />
+            <Route 
+              path="/report-incident" 
+              element={
+                <AppLayout>
+                  <ReportIncident />
+                </AppLayout>
+              } 
+            />
+            <Route 
+              path="/cases" 
+              element={
+                <AppLayout>
+                  <Cases />
+                </AppLayout>
+              } 
+            />
+            <Route 
+              path="/people" 
+              element={
+                <AppLayout>
+                  <People />
+                </AppLayout>
+              } 
+            />
+            <Route 
+              path="/reports" 
+              element={
+                <AppLayout>
+                  <Reports />
+                </AppLayout>
+              } 
+            />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  </ApolloProvider>
 );
 
 export default App;

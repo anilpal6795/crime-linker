@@ -1,69 +1,84 @@
-# Welcome to your Lovable project
 
-## Project info
+# Crime Intelligence Platform
 
-**URL**: https://lovable.dev/projects/cfeca037-3266-4c87-b536-9674b386665d
+A comprehensive platform for tracking incidents, cases, and persons of interest for crime intelligence.
 
-## How can I edit this code?
+## Project Structure
 
-There are several ways of editing your application.
+This is a monorepo containing both frontend and backend packages:
 
-**Use Lovable**
+- `/src`: Frontend React application
+- `/src/backend`: Backend GraphQL API with Prisma and PostgreSQL
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/cfeca037-3266-4c87-b536-9674b386665d) and start prompting.
+## Getting Started
 
-Changes made via Lovable will be committed automatically to this repo.
+### Backend Setup
 
-**Use your preferred IDE**
+1. Navigate to the backend directory:
+   ```
+   cd src/backend
+   ```
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+2. Install dependencies:
+   ```
+   npm install
+   ```
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+3. Create a PostgreSQL database and update the DATABASE_URL in the `.env` file.
 
-Follow these steps:
+4. Run database migrations:
+   ```
+   npx prisma migrate dev --name init
+   ```
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+5. Seed the database (optional):
+   ```
+   npm run seed
+   ```
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+6. Start the backend server:
+   ```
+   npm run dev
+   ```
 
-# Step 3: Install the necessary dependencies.
-npm i
+The GraphQL API will be available at http://localhost:4000.
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
+### Frontend Setup
 
-**Edit a file directly in GitHub**
+1. Install dependencies:
+   ```
+   npm install
+   ```
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+2. Start the frontend development server:
+   ```
+   npm run dev
+   ```
 
-**Use GitHub Codespaces**
+The frontend app will be available at http://localhost:5173.
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## Features
 
-## What technologies are used for this project?
+- Incident reporting and management
+- Case management
+- Person of interest tracking
+- Vehicle tracking
+- Evidence management
+- Connection analysis with graph visualization
+- Geographic analysis with map visualization
+- Dashboard with statistics and recent activities
 
-This project is built with .
+## Technology Stack
 
-- Vite
-- TypeScript
+### Frontend
 - React
-- shadcn-ui
+- TypeScript
 - Tailwind CSS
+- shadcn/ui component library
+- Recharts for data visualization
 
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/cfeca037-3266-4c87-b536-9674b386665d) and click on Share -> Publish.
-
-## I want to use a custom domain - is that possible?
-
-We don't support custom domains (yet). If you want to deploy your project under your own domain then we recommend using Netlify. Visit our docs for more details: [Custom domains](https://docs.lovable.dev/tips-tricks/custom-domain/)
+### Backend
+- Node.js with TypeScript
+- Apollo Server for GraphQL API
+- Prisma ORM
+- PostgreSQL database

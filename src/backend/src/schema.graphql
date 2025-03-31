@@ -1,0 +1,326 @@
+
+scalar DateTime
+scalar JSON
+
+enum EventType {
+  THEFT
+  ASSAULT
+  VANDALISM
+  FRAUD
+  TRESPASSING
+  HARASSMENT
+  OTHER
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+  UNKNOWN
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum Status {
+  OPEN
+  CLOSED
+  UNDER_INVESTIGATION
+}
+
+type Person {
+  id: ID!
+  firstName: String
+  lastName: String
+  alias: String
+  ethnicity: String
+  gender: Gender
+  age: Int
+  height: String
+  build: String
+  distinguishingFeatures: String
+  modus: String
+  isPersonOfInterest: Boolean
+  incidents: [Incident!]
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+type Vehicle {
+  id: ID!
+  licensePlate: String!
+  state: String
+  make: String
+  model: String
+  year: Int
+  color: String
+  distinguishingFeatures: String
+  isVehicleOfInterest: Boolean
+  incidents: [Incident!]
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+type Location {
+  id: ID!
+  address: String
+  city: String
+  state: String
+  zipCode: String
+  latitude: Float
+  longitude: Float
+  incidents: [Incident!]
+}
+
+type Evidence {
+  id: ID!
+  name: String!
+  type: String!
+  description: String
+  fileUrl: String
+  incident: Incident
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+type Product {
+  id: ID!
+  name: String!
+  description: String
+  quantity: Int
+  value: Float
+  incident: Incident
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+type Tag {
+  id: ID!
+  name: String!
+  color: String
+  incidents: [Incident!]
+}
+
+type Incident {
+  id: ID!
+  title: String!
+  eventType: EventType!
+  description: String!
+  dateTime: DateTime!
+  location: Location
+  people: [Person!]
+  vehicles: [Vehicle!]
+  products: [Product!]
+  evidence: [Evidence!]
+  tags: [Tag!]
+  reporterId: ID
+  reporter: Person
+  cases: [Case!]
+  status: Status!
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+type Case {
+  id: ID!
+  title: String!
+  description: String!
+  incidents: [Incident!]
+  assignedTo: ID
+  statusUpdates: [StatusUpdate!]
+  status: Status!
+  priority: Priority!
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+type StatusUpdate {
+  id: ID!
+  caseId: ID!
+  case: Case!
+  message: String!
+  userId: ID!
+  createdAt: DateTime!
+}
+
+type GraphNode {
+  id: ID!
+  label: String!
+  type: String!
+  data: JSON
+}
+
+type GraphEdge {
+  id: ID!
+  source: ID!
+  target: ID!
+  label: String
+}
+
+type GraphData {
+  nodes: [GraphNode!]!
+  edges: [GraphEdge!]!
+}
+
+type DashboardStat {
+  title: String!
+  value: String!
+  change: Float
+  direction: String
+  period: String
+}
+
+type Query {
+  # Person queries
+  person(id: ID!): Person
+  people(isPersonOfInterest: Boolean): [Person!]!
+  searchPeople(searchTerm: String!): [Person!]!
+
+  # Vehicle queries
+  vehicle(id: ID!): Vehicle
+  vehicles(isVehicleOfInterest: Boolean): [Vehicle!]!
+  searchVehicles(searchTerm: String!): [Vehicle!]!
+
+  # Incident queries
+  incident(id: ID!): Incident
+  incidents(status: Status, eventType: EventType): [Incident!]!
+  recentIncidents(limit: Int): [Incident!]!
+
+  # Case queries
+  case(id: ID!): Case
+  cases(status: Status, priority: Priority): [Case!]!
+
+  # Dashboard queries
+  dashboardStats: [DashboardStat!]!
+  
+  # Graph queries
+  personConnections(personId: ID!): GraphData!
+  caseConnections(caseId: ID!): GraphData!
+  incidentConnections(incidentId: ID!): GraphData!
+}
+
+type Mutation {
+  # Person mutations
+  createPerson(
+    firstName: String
+    lastName: String
+    alias: String
+    ethnicity: String
+    gender: Gender
+    age: Int
+    height: String
+    build: String
+    distinguishingFeatures: String
+    modus: String
+    isPersonOfInterest: Boolean
+  ): Person!
+
+  updatePerson(
+    id: ID!
+    firstName: String
+    lastName: String
+    alias: String
+    ethnicity: String
+    gender: Gender
+    age: Int
+    height: String
+    build: String
+    distinguishingFeatures: String
+    modus: String
+    isPersonOfInterest: Boolean
+  ): Person!
+
+  deletePerson(id: ID!): Boolean!
+
+  # Vehicle mutations
+  createVehicle(
+    licensePlate: String!
+    state: String
+    make: String
+    model: String
+    year: Int
+    color: String
+    distinguishingFeatures: String
+    isVehicleOfInterest: Boolean
+  ): Vehicle!
+
+  updateVehicle(
+    id: ID!
+    licensePlate: String
+    state: String
+    make: String
+    model: String
+    year: Int
+    color: String
+    distinguishingFeatures: String
+    isVehicleOfInterest: Boolean
+  ): Vehicle!
+
+  deleteVehicle(id: ID!): Boolean!
+
+  # Incident mutations
+  createIncident(
+    title: String!
+    eventType: EventType!
+    description: String!
+    dateTime: DateTime!
+    locationId: ID
+    peopleIds: [ID!]
+    vehicleIds: [ID!]
+    productIds: [ID!]
+    evidenceIds: [ID!]
+    tagIds: [ID!]
+    reporterId: ID
+    status: Status!
+  ): Incident!
+
+  updateIncident(
+    id: ID!
+    title: String
+    eventType: EventType
+    description: String
+    dateTime: DateTime
+    locationId: ID
+    peopleIds: [ID!]
+    vehicleIds: [ID!]
+    productIds: [ID!]
+    evidenceIds: [ID!]
+    tagIds: [ID!]
+    reporterId: ID
+    status: Status
+  ): Incident!
+
+  deleteIncident(id: ID!): Boolean!
+
+  # Case mutations
+  createCase(
+    title: String!
+    description: String!
+    incidentIds: [ID!]
+    assignedTo: ID
+    status: Status!
+    priority: Priority!
+  ): Case!
+
+  updateCase(
+    id: ID!
+    title: String
+    description: String
+    incidentIds: [ID!]
+    assignedTo: ID
+    status: Status
+    priority: Priority
+  ): Case!
+
+  deleteCase(id: ID!): Boolean!
+
+  # Status update mutations
+  addStatusUpdate(
+    caseId: ID!
+    message: String!
+    userId: ID!
+  ): StatusUpdate!
+}
